@@ -15,28 +15,40 @@ parser.add_argument('-d','--download',action='store_true')
 parser.add_argument('--dryrun',action='store_true')
 
 def downloadmap():
+  print("downloading columns " + str(x_start) + " to " + str(x_end))
   for x in range(x_start,x_end+1):
+    print("Column " + str(x),end=" ")
     for y in range(y_start,y_end+1):
       url = "https://cache.dciwx.com/basemaps/dci/vfr-canada/10/{}/{}.png".format(x,y)
       file = requests.get(url, stream=True)
       dump = file.raw
-      location = os.path.abspath("/Users/justinslind/programming/efis-map")
-      with open("image-{}-{}.png".format(x,y), 'wb') as location:
+      location = os.path.abspath("/Users/justinslind/programming/efis-map/tiles/")
+      print(".",end='')
+      sys.stdout.flush()
+      with open("./tiles/image-{}-{}.png".format(x,y), 'wb') as location:
         shutil.copyfileobj(dump, location)
+    print(" ")
 
 def stitch():
   new_im = Image.new('RGB', (256 * (x_end+1-x_start), 256 * (y_end+1-y_start)))
-  print("stiching rows " + str(x_start) + " to " + str(x_end))
+  print("stiching columns " + str(x_start) + " to " + str(x_end))
   for x in range(x_start,x_end+1):
-    print("Row " + str(x),end=" ")
+    print("Column " + str(x),end=" ")
     for y in range(y_start,y_end+1):
-      image_file = "image-{}-{}.png".format(x,y)
+      image_file = "./tiles/image-{}-{}.png".format(x,y)
       print(".",end='')
       sys.stdout.flush()
-      im=Image.open(image_file)
-      new_im.paste(im, (256 * (x-x_start),256 * (y_end-y)))
+      try:
+        im=Image.open(image_file)
+        new_im.paste(im, (256 * (x-x_start),256 * (y_end-y)))
+        print(".",end='')
+        sys.stdout.flush()
+      except Image.UnidentifiedImageError:
+        print(" ", end='')
+        sys.stdout.flush()
     print(" ")
   new_im.save(map+".jpg")
+  print("Map file samed as " + map + ".jpg")
 
 # From https://wiki.openstreetmap.org/wiki/Slippy_map_tilenames#Tile_numbers_to_lon./lat._2
 def num2deg(xtile, ytile, zoom):
@@ -61,14 +73,28 @@ for map in args.maps:
 
   if map == "W108N50":
       lonstart=-50.0
-      latstart=-116.0
-      lonend=-58.0
+      #latstart=-116.0
+      #lonend=-58.0
       latend=-108.0
+  elif map == "W116N50":
+      lonstart=-50.0
+      #latstart=-124.0
+      #lonend=-58.0
+      latend=-116.0
+  elif map == "W124N50":
+      lonstart=-50.0
+      #latstart=-124.0
+      #lonend=-58.0
+      latend=-124.0
+  elif map == "W124N42":
+      lonstart=-42.0
+      latend=-124.0
   else:
       print("Invalid map.")
       quit()
 
-
+  latstart=latend-8.0
+  lonend=lonstart-8.0
 
   x_start = 182
   x_end = 204
@@ -80,10 +106,18 @@ for map in args.maps:
 
   print(deg2num(lonstart,latstart,zoom))
   print("should be " + str(x_start) + " to " + str(y_start))
-  
-  #downloadmap()
+
+  x_start, y_start = deg2num(lonstart,latstart,zoom)
+  x_end, y_end = deg2num(lonend,latend,zoom)
+  if (args.download == True):
+    downloadmap()
   if (args.dryrun == False):
-    stitch()
+    try:
+      stitch()
+    except FileNotFoundError:
+      print()
+      print()
+      print("Could not find tile files.  Try running with -d to download")
   (lat_deg, lon_deg) = num2deg(x_start,y_end,zoom)
   lat_deg = abs(lat_deg)
   lon_deg = abs(lon_deg)
@@ -91,7 +125,7 @@ for map in args.maps:
   lat_deg_min = (lat_deg - lat_deg_floor) * 60
   lon_deg_floor = math.floor(lon_deg)
   lon_deg_min = (lon_deg - lon_deg_floor) * 60
-  print("North West: ",lat_deg_floor, " ", lat_deg_min,",",lon_deg_floor," ",lon_deg_min, "(",lat_deg,",",lon_deg,")")
+  #print("North West: ",lat_deg_floor, " ", lat_deg_min,",",lon_deg_floor," ",lon_deg_min, "(",lat_deg,",",lon_deg,")")
   (lat_deg, lon_deg) = num2deg(x_end,y_start,zoom)
   lat_deg = abs(lat_deg)
   lon_deg = abs(lon_deg)
@@ -99,4 +133,4 @@ for map in args.maps:
   lat_deg_min = (lat_deg - lat_deg_floor) * 60
   lon_deg_floor = math.floor(lon_deg)
   lon_deg_min = (lon_deg - lon_deg_floor) * 60
-  print("South East: ",lat_deg_floor, " ", lat_deg_min,",",lon_deg_floor," ",lon_deg_min, "(",lat_deg,",",lon_deg,")")
+  #print("South East: ",lat_deg_floor, " ", lat_deg_min,",",lon_deg_floor," ",lon_deg_min, "(",lat_deg,",",lon_deg,")")
