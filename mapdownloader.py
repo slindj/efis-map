@@ -13,6 +13,7 @@ parser.add_argument('maps', nargs='+',
                     help='eFIS map to process, ie: W118N50')
 parser.add_argument('-d','--download',action='store_true')
 parser.add_argument('--dryrun',action='store_true')
+parser.add_argument('-c','--clone',action='store_true')
 
 def downloadmap():
   print("downloading columns " + str(x_start) + " to " + str(x_end))
@@ -27,7 +28,59 @@ def downloadmap():
       sys.stdout.flush()
       with open("./tiles/image-{}-{}.png".format(x,y), 'wb') as location:
         shutil.copyfileobj(dump, location)
+      url = "https://cache.dciwx.com/basemaps/dci/sectionals/10/{}/{}.png".format(x,y)
+      file = requests.get(url, stream=True)
+      dump = file.raw
+      location = os.path.abspath("/Users/justinslind/programming/efis-map/tiles-2/")
+      print(".",end='')
+      sys.stdout.flush()
+      with open("./tiles-2/image-{}-{}.png".format(x,y), 'wb') as location:
+        shutil.copyfileobj(dump, location)
     print(" ")
+
+def downloadstructure():
+  print("downloading columns " + str(x_start) + " to " + str(x_end))
+  for x in range(x_start,x_end+1):
+    print("Column " + str(x),end=" ")
+    for y in range(y_start,y_end+1):
+      url = "https://cache.dciwx.com/basemaps/dci/vfr-canada/10/{}/{}.png".format(x,y)
+      file = requests.get(url, stream=True)
+      dump = file.raw
+      location = os.path.abspath("/Users/justinslind/programming/efis-map/tiles/")
+      print(".",end='')
+      sys.stdout.flush()
+      try:
+        with open("./10/{}/{}-fore.png".format(x,y), 'wb') as location:
+          shutil.copyfileobj(dump, location)
+      except FileNotFoundError:
+        os.makedirs("10/"+str(x))
+        with open("./10/{}/{}-fore.png".format(x,y), 'wb') as location:
+          shutil.copyfileobj(dump, location)
+      url = "https://cache.dciwx.com/basemaps/dci/sectionals/10/{}/{}.png".format(x,y)
+      file = requests.get(url, stream=True)
+      dump = file.raw
+      location = os.path.abspath("/Users/justinslind/programming/efis-map/tiles-2/")
+      print(".",end='')
+      sys.stdout.flush()
+      with open("./10/{}/{}-back.png".format(x,y), 'wb') as location:
+        shutil.copyfileobj(dump, location)
+      new_im = Image.new('RGB', (256, 256))
+      try:
+        im=Image.open("./10/{}/{}-back.png".format(x,y))
+        new_im.paste(im, (0,0),im.convert('RGBA'))
+      except Image.UnidentifiedImageError:
+        pass
+      try:
+        im=Image.open("./10/{}/{}-fore.png".format(x,y))
+        new_im.paste(im, (0,0),im.convert('RGBA'))
+      except Image.UnidentifiedImageError:
+        pass
+      temp_im = new_im.convert("P", palette=Image.ADAPTIVE, colors=8)
+      temp_im.save("./10/{}/{}.png".format(x,y),dpi=(94, 94))
+      os.remove("./10/{}/{}-back.png".format(x,y))
+      os.remove("./10/{}/{}-fore.png".format(x,y))
+    print(" ")
+
 
 def stitch():
   new_im = Image.new('RGB', (256 * (x_end+1-x_start), 256 * (y_end+1-y_start)))
@@ -36,11 +89,18 @@ def stitch():
     print("Column " + str(x),end=" ")
     for y in range(y_start,y_end+1):
       image_file = "./tiles/image-{}-{}.png".format(x,y)
-      print(".",end='')
-      sys.stdout.flush()
+      image_file_us = "./tiles-2/image-{}-{}.png".format(x,y)
+      #try to paste the US tile first, doesn't matter if it fails.
+      try:
+        im=Image.open(image_file_us)
+        new_im.paste(im, (256 * (x-x_start),256 * (y_end-y)),im.convert('RGBA'))
+      except Image.UnidentifiedImageError:
+        print(" ",end='')
+      except FileNotFoundError:
+        print("/",end='')
       try:
         im=Image.open(image_file)
-        new_im.paste(im, (256 * (x-x_start),256 * (y_end-y)))
+        new_im.paste(im, (256 * (x-x_start),256 * (y_end-y)),im.convert('RGBA'))
         print(".",end='')
         sys.stdout.flush()
       except Image.UnidentifiedImageError:
@@ -48,7 +108,7 @@ def stitch():
         sys.stdout.flush()
     print(" ")
   new_im.save(map+".jpg")
-  print("Map file samed as " + map + ".jpg")
+  print("Map file saved as " + map + ".jpg")
 
 # From https://wiki.openstreetmap.org/wiki/Slippy_map_tilenames#Tile_numbers_to_lon./lat._2
 def num2deg(xtile, ytile, zoom):
@@ -67,28 +127,34 @@ def deg2num(lat_deg, lon_deg, zoom):
 
 
 args = parser.parse_args()
-print(args.maps, args.download, args.dryrun)
+print(args.maps, args.download, args.dryrun, args.clone)
 
 for map in args.maps:
 
-  if map == "W108N50":
+  if map == "W116N58":
       lonstart=-50.0
       #latstart=-116.0
       #lonend=-58.0
       latend=-108.0
-  elif map == "W116N50":
+  elif map == "W124N58":
       lonstart=-50.0
       #latstart=-124.0
       #lonend=-58.0
       latend=-116.0
-  elif map == "W124N50":
+  elif map == "W132N58":
       lonstart=-50.0
       #latstart=-124.0
       #lonend=-58.0
       latend=-124.0
-  elif map == "W124N42":
+  elif map == "W132N50":
       lonstart=-42.0
       latend=-124.0
+  elif map == "W124N50":
+      lonstart=-42.0
+      latend=-116.0
+  elif map == "W116N50":
+      lonstart=-42.0
+      latend=-108.0
   else:
       print("Invalid map.")
       quit()
@@ -104,14 +170,16 @@ for map in args.maps:
 
   zoom = 10
 
-  print(deg2num(lonstart,latstart,zoom))
-  print("should be " + str(x_start) + " to " + str(y_start))
+  #print(deg2num(lonstart,latstart,zoom))
+  #print("should be " + str(x_start) + " to " + str(y_start))
 
   x_start, y_start = deg2num(lonstart,latstart,zoom)
   x_end, y_end = deg2num(lonend,latend,zoom)
-  if (args.download == True):
+  if (args.clone ==True):
+    downloadstructure()
+  if ((args.download == True) & (args.clone == False)):
     downloadmap()
-  if (args.dryrun == False):
+  if ((args.dryrun == False) and (args.clone == False)):
     try:
       stitch()
     except FileNotFoundError:
