@@ -23,7 +23,7 @@ def downloadmap():
       url = "https://cache.dciwx.com/basemaps/dci/vfr-canada/10/{}/{}.png".format(x,y)
       file = requests.get(url, stream=True)
       dump = file.raw
-      location = os.path.abspath("/Users/justinslind/programming/efis-map/tiles/")
+      location = os.path.abspath("./tiles/")
       print(".",end='')
       sys.stdout.flush()
       with open("./tiles/image-{}-{}.png".format(x,y), 'wb') as location:
@@ -31,7 +31,7 @@ def downloadmap():
       url = "https://cache.dciwx.com/basemaps/dci/sectionals/10/{}/{}.png".format(x,y)
       file = requests.get(url, stream=True)
       dump = file.raw
-      location = os.path.abspath("/Users/justinslind/programming/efis-map/tiles-2/")
+      location = os.path.abspath("./tiles-2/")
       print(".",end='')
       sys.stdout.flush()
       with open("./tiles-2/image-{}-{}.png".format(x,y), 'wb') as location:
@@ -130,8 +130,37 @@ args = parser.parse_args()
 print(args.maps, args.download, args.dryrun, args.clone)
 
 for map in args.maps:
-
-  if map == "W116N58":
+  if map == "W076N50":
+      lonstart=-42.0
+      latend=-068.0
+  elif map == "W084N50":
+      lonstart=-42.0
+      latend=-076.0
+  elif map == "W092N50":
+      lonstart=-42.0
+      latend=-084.0
+  elif map == "W100N50":
+      lonstart=-42.0
+      latend=-092.0
+  elif map == "W108N50":
+      lonstart=-42.0
+      latend=-100.0
+  elif map == "W076N58":
+      lonstart=-50.0
+      latend=-068.0
+  elif map == "W084N58":
+      lonstart=-50.0
+      latend=-076.0
+  elif map == "W092N58":
+      lonstart=-50.0
+      latend=-084.0
+  elif map == "W100N58":
+      lonstart=-50.0
+      latend=-092.0
+  elif map == "W108N58":
+      lonstart=-50.0
+      latend=-100.0
+  elif map == "W116N58":
       lonstart=-50.0
       #latstart=-116.0
       #lonend=-58.0
@@ -156,7 +185,7 @@ for map in args.maps:
       lonstart=-42.0
       latend=-108.0
   else:
-      print("Invalid map.")
+      print(map + " invalid map.")
       quit()
 
   latstart=latend-8.0
@@ -177,7 +206,7 @@ for map in args.maps:
   x_end, y_end = deg2num(lonend,latend,zoom)
   if (args.clone ==True):
     downloadstructure()
-  if ((args.download == True) & (args.clone == False)):
+  if ((args.download == True) and (args.clone == False)):
     downloadmap()
   if ((args.dryrun == False) and (args.clone == False)):
     try:
