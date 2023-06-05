@@ -46,7 +46,7 @@ def downloadstructure():
       url = "https://cache.dciwx.com/basemaps/dci/vfr-canada/10/{}/{}.png".format(x,y)
       file = requests.get(url, stream=True)
       dump = file.raw
-      location = os.path.abspath("/Users/justinslind/programming/efis-map/tiles/")
+      location = os.path.abspath("./tiles/")
       print(".",end='')
       sys.stdout.flush()
       try:
@@ -59,7 +59,7 @@ def downloadstructure():
       url = "https://cache.dciwx.com/basemaps/dci/sectionals/10/{}/{}.png".format(x,y)
       file = requests.get(url, stream=True)
       dump = file.raw
-      location = os.path.abspath("/Users/justinslind/programming/efis-map/tiles-2/")
+      location = os.path.abspath("./tiles-2/")
       print(".",end='')
       sys.stdout.flush()
       with open("./10/{}/{}-back.png".format(x,y), 'wb') as location:
