@@ -1,0 +1,9 @@
+*.png
+*.jpg
+bin/*
+certifi/*
+charset_normalizer/*
+PIL/*
+requests/*
+urllib3/*
+idna/*
