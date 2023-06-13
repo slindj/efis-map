@@ -1,6 +1,7 @@
 import argparse
 import requests
 import os
+import re
 
 import shutil
 import sys
@@ -20,7 +21,7 @@ def downloadmap():
   for x in range(x_start,x_end+1):
     print("Column " + str(x),end=" ")
     for y in range(y_start,y_end+1):
-      url = "https://cache.dciwx.com/basemaps/dci/vfr-canada/10/{}/{}.png".format(x,y)
+      url = "https://cache.dciwx.com/basemaps/dci/vfr-canada/zoom/{}/{}.png".format(x,y)
       file = requests.get(url, stream=True)
       dump = file.raw
       location = os.path.abspath("./tiles/")
@@ -28,7 +29,7 @@ def downloadmap():
       sys.stdout.flush()
       with open("./tiles/image-{}-{}.png".format(x,y), 'wb') as location:
         shutil.copyfileobj(dump, location)
-      url = "https://cache.dciwx.com/basemaps/dci/sectionals/10/{}/{}.png".format(x,y)
+      url = "https://cache.dciwx.com/basemaps/dci/sectionals/zoom/{}/{}.png".format(x,y)
       file = requests.get(url, stream=True)
       dump = file.raw
       location = os.path.abspath("./tiles-2/")
@@ -43,42 +44,43 @@ def downloadstructure():
   for x in range(x_start,x_end+1):
     print("Column " + str(x),end=" ")
     for y in range(y_start,y_end+1):
-      url = "https://cache.dciwx.com/basemaps/dci/vfr-canada/10/{}/{}.png".format(x,y)
+      url = "https://services.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{}/{}/{}.png".format(zoom,x,y)
+      #url = "https://cache.dciwx.com/basemaps/dci/vfr-canada/{}/{}/{}.png".format(zoom,x,y)
       file = requests.get(url, stream=True)
       dump = file.raw
       location = os.path.abspath("./tiles/")
       print(".",end='')
       sys.stdout.flush()
       try:
-        with open("./10/{}/{}-fore.png".format(x,y), 'wb') as location:
+        with open("./{}/{}/{}-fore.png".format(zoom,x,y), 'wb') as location:
           shutil.copyfileobj(dump, location)
       except FileNotFoundError:
-        os.makedirs("10/"+str(x))
-        with open("./10/{}/{}-fore.png".format(x,y), 'wb') as location:
+        os.makedirs("{}/".format(zoom)+str(x))
+        with open("./{}/{}/{}-fore.png".format(zoom,x,y), 'wb') as location:
           shutil.copyfileobj(dump, location)
-      url = "https://cache.dciwx.com/basemaps/dci/sectionals/10/{}/{}.png".format(x,y)
+      url = "https://cache.dciwx.com/basemaps/dci/sectionals/{}/{}/{}.png".format(zoom,x,y)
       file = requests.get(url, stream=True)
       dump = file.raw
       location = os.path.abspath("./tiles-2/")
       print(".",end='')
       sys.stdout.flush()
-      with open("./10/{}/{}-back.png".format(x,y), 'wb') as location:
+      with open("./{}/{}/{}-back.png".format(zoom,x,y), 'wb') as location:
         shutil.copyfileobj(dump, location)
       new_im = Image.new('RGB', (256, 256))
       try:
-        im=Image.open("./10/{}/{}-back.png".format(x,y))
+        im=Image.open("./{}/{}/{}-back.png".format(zoom,x,y))
         new_im.paste(im, (0,0),im.convert('RGBA'))
       except Image.UnidentifiedImageError:
         pass
       try:
-        im=Image.open("./10/{}/{}-fore.png".format(x,y))
+        im=Image.open("./{}/{}/{}-fore.png".format(zoom,x,y))
         new_im.paste(im, (0,0),im.convert('RGBA'))
       except Image.UnidentifiedImageError:
         pass
       temp_im = new_im.convert("P", palette=Image.ADAPTIVE, colors=8)
-      temp_im.save("./10/{}/{}.png".format(x,y),dpi=(94, 94))
-      os.remove("./10/{}/{}-back.png".format(x,y))
-      os.remove("./10/{}/{}-fore.png".format(x,y))
+      temp_im.save("./{}/{}/{}.png".format(zoom,x,y),dpi=(94, 94))
+      os.remove("./{}/{}/{}-back.png".format(zoom,x,y))
+      os.remove("./{}/{}/{}-fore.png".format(zoom,x,y))
     print(" ")
 
 
@@ -129,7 +131,7 @@ def deg2num(lat_deg, lon_deg, zoom):
 args = parser.parse_args()
 print(args.maps, args.download, args.dryrun, args.clone)
 
-for map in args.maps:
+"""
   if map == "W076N50":
       lonstart=-42.0
       latend=-068.0
@@ -190,6 +192,29 @@ for map in args.maps:
 
   latstart=latend-8.0
   lonend=lonstart-8.0
+"""
+
+for map in args.maps:
+  pattern = "[EW]\d{3}[NW]\d{2}"
+  if re.match(pattern,map):
+    print(map + "matches pattern")
+    latstart=float(map[1:4])
+    if map[0:1] == "W":
+      latstart = latstart * -1
+    lonend=float(map[5:7])
+    if map[4:5] == "N":
+      lonend = lonend * -1
+  else:
+    print(map + " invalid map.")
+    quit()
+  latend = latstart + 8.0
+  lonstart = lonend + 8.0
+
+  print("latstart " + str(latstart))
+  print("latend " + str(latend))
+  print("lonstart " + str(lonstart))
+  print("lonend" + str(lonend))
+
 
   x_start = 182
   x_end = 204
@@ -197,7 +222,7 @@ for map in args.maps:
   y_start = 676
   y_end = 715
 
-  zoom = 10
+  zoom = 7
 
   #print(deg2num(lonstart,latstart,zoom))
   #print("should be " + str(x_start) + " to " + str(y_start))
