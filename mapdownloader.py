@@ -7,6 +7,7 @@ import shutil
 import sys
 import math
 from PIL import Image
+
 #from PIL.Image import core as _imaging
 
 parser = argparse.ArgumentParser(description='Download and Stitch WMS tiles')
@@ -44,8 +45,8 @@ def downloadstructure():
   for x in range(x_start,x_end+1):
     print("Column " + str(x),end=" ")
     for y in range(y_start,y_end+1):
-      url = "https://services.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{}/{}/{}.png".format(zoom,x,y)
-      #url = "https://cache.dciwx.com/basemaps/dci/vfr-canada/{}/{}/{}.png".format(zoom,x,y)
+      #url = "https://services.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{}/{}/{}.png".format(zoom,x,y)
+      url = "https://cache.dciwx.com/basemaps/dci/vfr-canada/{}/{}/{}.png".format(zoom,x,y)
       file = requests.get(url, stream=True)
       dump = file.raw
       location = os.path.abspath("./tiles/")
@@ -77,7 +78,7 @@ def downloadstructure():
         new_im.paste(im, (0,0),im.convert('RGBA'))
       except Image.UnidentifiedImageError:
         pass
-      temp_im = new_im.convert("P", palette=Image.ADAPTIVE, colors=8)
+      temp_im = new_im.convert("P", palette=Image.ADAPTIVE, colors=256)
       temp_im.save("./{}/{}/{}.png".format(zoom,x,y),dpi=(94, 94))
       os.remove("./{}/{}/{}-back.png".format(zoom,x,y))
       os.remove("./{}/{}/{}-fore.png".format(zoom,x,y))
@@ -222,7 +223,7 @@ for map in args.maps:
   y_start = 676
   y_end = 715
 
-  zoom = 7
+  zoom = 10
 
   #print(deg2num(lonstart,latstart,zoom))
   #print("should be " + str(x_start) + " to " + str(y_start))
@@ -230,7 +231,10 @@ for map in args.maps:
   x_start, y_start = deg2num(lonstart,latstart,zoom)
   x_end, y_end = deg2num(lonend,latend,zoom)
   if (args.clone ==True):
-    downloadstructure()
+    for zoom in range(6,11):
+      x_start, y_start = deg2num(lonstart,latstart,zoom)
+      x_end, y_end = deg2num(lonend,latend,zoom)
+      downloadstructure()
   if ((args.download == True) and (args.clone == False)):
     downloadmap()
   if ((args.dryrun == False) and (args.clone == False)):
